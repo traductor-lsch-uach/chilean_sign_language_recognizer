@@ -20,7 +20,8 @@ face_keypoints = ['FACE_' + str(n) for n in range(1, len_face_keypoints+1)]
 keypoint_names = ['frame'] + pose + face_keypoints + left_hand + right_hand
 df = pd.DataFrame([], columns= keypoint_names)
 
-cap = cv2.VideoCapture('gestures/hola.mp4')
+#cap = cv2.VideoCapture('gestures/hola.mp4')
+cap = cv2.VideoCapture(0)
 frame = 0
 with mp_holistic.Holistic(
     min_detection_confidence=0.5,
@@ -36,6 +37,19 @@ with mp_holistic.Holistic(
         
         mp_drawing.draw_landmarks(image, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
         mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
+        mp_drawing.draw_landmarks(
+            image,
+            results.face_landmarks,
+            mp_holistic.FACEMESH_CONTOURS,
+            landmark_drawing_spec=None,
+            connection_drawing_spec=mp_drawing_styles
+            .get_default_face_mesh_contours_style())
+        mp_drawing.draw_landmarks(
+            image,
+            results.pose_landmarks,
+            mp_holistic.POSE_CONNECTIONS,
+            landmark_drawing_spec=mp_drawing_styles
+            .get_default_pose_landmarks_style())
         
         try:
             pose = list(results.pose_landmarks.landmark)
@@ -48,12 +62,22 @@ with mp_holistic.Holistic(
             exc_type, exc_obj, exc_tb = sys.exc_info()
             print(exc_type, exc_tb.tb_lineno, frame)
             
+            if results.pose_landmarks is None:
+                print('No pose')
+                pose = [None] * len_pose_keypoints
+                
+            if results.face_landmarks is None:
+                print('No face')
+                face = [None] * len_face_keypoints
+                
             if results.left_hand_landmarks is None:
                 print('No left hand')
                 left_hand = [None] * len_hand_keypoints
+                
             if results.right_hand_landmarks is None:
                 print('No right hand')
                 right_hand = [None] * len_hand_keypoints
+                
             keypoints = [frame] + pose + face + left_hand + right_hand
             df.loc[str(frame)] = keypoints
         except Exception as e:
